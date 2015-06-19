@@ -38,7 +38,20 @@
                 }
             });
             
-            $("#categories").select2();
+            $("#categories", $this).selectize({
+                delimiter: ',',
+                persist: false,
+                options: [
+                    {value: 'IT Support', text: 'IT Support'},
+                    {value: 'Deposition', text: 'Deposition'}
+                ]//,
+                // create: function(input) {
+                    // return {
+                        // value: input,
+                        // text: input
+                    // }
+                // }
+            });
 
             console.log('done');
         });
