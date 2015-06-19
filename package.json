@@ -1,0 +1,12 @@
+{
+  "name": "ticket",
+  "version": "0.0.1",
+  "description": "helpdesk ticket system",
+  "dependencies": {
+    "express": "^4.12.4",
+    "express-handlebars": "^2.0.1",
+    "moment": "^2.10.3",
+    "mongodb": "^2.0.34",
+    "socket.io": "^1.3.5"
+  }
+}

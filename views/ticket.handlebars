@@ -1,0 +1,37 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h3 class="panel-title">Ticket #{{ticket.number}}</h3>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Status</strong></div>
+            <div class="col-sm-10">
+                {{#if ticket.open}}
+                    <span class="label label-success">Open</span>
+                {{else}}
+                    <span class="label label-danger">Closed</span>
+                {{/if}}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Created</strong></div>
+            <div class="col-sm-10">{{format ticket.created "M/D/YYYY h:mm:ss"}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Department</strong></div>
+            <div class="col-sm-10">{{ticket.department.name}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Email</strong></div>
+            <div class="col-sm-10">{{ticket.email}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Subject</strong></div>
+            <div class="col-sm-10">{{ticket.subject}}</div>
+        </div>
+        <div class="row">
+            <div class="col-sm-2 text-left-xs text-right-md"><strong>Issue</strong></div>
+            <div class="col-sm-10">{{ticket.issue}}</div>
+        </div>
+    </div>
+</div>
