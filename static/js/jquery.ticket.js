@@ -3,9 +3,11 @@
         return this.each(function(){
             var $this = $(this);
             
+            selectedCategory = '';
+            
             var getTicket = function(){
                 return {
-                    "department": {"id": $("#dept").val(), "name": $("#dept", $this).find("option:selected").text()},
+                    "category": selectedCategory,
                     "email": $("#email", $this).val(),
                     "subject": $("#subj", $this).val(),
                     "issue": $("#issue", $this).val()
@@ -13,7 +15,7 @@
             }
             
             var clearForm = function(){
-                $("#dept", $this).prop('selectedIndex', 0);
+                $("#categories", $this).prop('selectedIndex', 0);
                 $("#email", $this).val('');
                 $("#subj", $this).val('');
                 $("#issue", $this).val('');
@@ -24,35 +26,31 @@
             }
             
             $this.on("click", ".create-ticket", function(e){
-                var ticket = getTicket();
-                clearForm();
-                socket.emit('create-ticket', ticket);
+                if (selectedCategory){
+                    var ticket = getTicket();
+                    clearForm();
+                    socket.emit('create-ticket', ticket);
+                }
+            }).on("get-ticket", function(e, callback){
+                if (typeof callback == 'function')
+                    callback(getTicket());
             });
             
-            socket.on('ticket-created', function(result){
-                if (result.error) {
-                    $(".home-create-ticket-message").html(getBootstrapAlert("danger", result.error.message));
-                } else {
-                    $(".home-create-ticket-message").html(getBootstrapAlert("success", 'Created ticket <a href="/ticket/' + result.ticket.number + '">#' + result.ticket.number + '</a> <em class="text-muted">&larr; click to view</em>'));
-                    $(".console").append($("<div/>").html("["+moment().format("YYYY-MM-DD HH:mm:ss")+"] ticket #" + result.ticket.number + " created by " + result.ticket.email));
+            socket.on('ticket-created', function(ticket){
+                $(".home-create-ticket-message", $this).html(getBootstrapAlert("success", 'Created ticket <a href="/ticket/' + ticket.number + '">#' + ticket.number + '</a> <em class="text-muted">&larr; click to view</em>'));
+                $(".console", $this).append($("<div/>").html("["+moment().format("YYYY-MM-DD HH:mm:ss")+"] ticket #" + ticket.number + " created by " + ticket.email));
+            }).on('categories', function(categories){
+                fillCategories(categories);
+            });
+            
+            $('#categories').selectize({
+                create: true,
+                sortField: 'text',
+                onChange: function(value){
+                    selectedCategory = value;
                 }
             });
-            
-            $("#categories", $this).selectize({
-                delimiter: ',',
-                persist: false,
-                options: [
-                    {value: 'IT Support', text: 'IT Support'},
-                    {value: 'Deposition', text: 'Deposition'}
-                ]//,
-                // create: function(input) {
-                    // return {
-                        // value: input,
-                        // text: input
-                    // }
-                // }
-            });
-
+           
             console.log('done');
         });
     }

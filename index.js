@@ -3,8 +3,8 @@ process.stdin.setEncoding('utf8');
 var util = require('util');
 
 var debug = {
-    log: function(obj) {
-        console.log(util.inspect(obj, {showHidden: false, depth: null}));
+    log: function(obj, depth) {
+        console.log(util.inspect(obj, {showHidden: false, depth: depth}));
     }
 };
 
@@ -28,54 +28,15 @@ app.engine('handlebars', exphbs({
 }));
 app.set('view engine', 'handlebars');
 
-//database
-var mongoClient = require('mongodb').MongoClient;
-
-var insert = function(collection, document, callback){
-    mongoClient.connect('mongodb://127.0.0.1:27017/ticket', function(err, db){
-        if (err) throw err;
-        db.collection(collection).insert(document, function(err, result) {
-            if (typeof callback == 'function')
-                callback(err, result)
-        });
-    });
-}
-
-var findOne = function(collection, query, callback){
-    mongoClient.connect('mongodb://127.0.0.1:27017/ticket', function(err, db){
-        if (err) throw err;
-        db.collection(collection).findOne(query, function(err, document) {
-            if (typeof callback == 'function')
-                callback(err, document)
-        });
-    });
-}
-
-var getUniqueTicketNumber = function(callback){
-    
-    var low = 100000;
-    var high = 1000000;
-    
-    var result = Math.floor(Math.random() * (high - low) + low);
-    
-    findOne('tickets', {number:result}, function(err, document){
-        if (document)
-            getRandomTicketNumber(callback);
-        else {
-            if (typeof callback == 'function')
-                callback(result);
-        }
-    });
-    
-}
+var da = require('./data-access.js')('mongodb://127.0.0.1:27017/ticket');
+var repo = require('./repository.js')(da);
 
 app.get('/', function (req, res) {
-    res.render('home', {
-        title: 'Ticket',
-        departments: [
-            {id: 1, name: 'IT Support'},
-            {id: 2, name: 'Deposition'}
-        ]
+    repo.getCategories(function(documents){
+        res.render('home', {
+            title: 'Ticket',
+            categories: documents
+        });    
     });
 }).get('/tickets', function(req, res){
     res.render('tickets', {
@@ -83,12 +44,11 @@ app.get('/', function (req, res) {
     });
 }).get('/ticket/:number', function(req, res){
     var n = parseInt(req.params.number);
-    
-    findOne('tickets', {number:n}, function(err, document){
+    repo.getTicketByNumber(n, function(ticket){
         res.render('ticket', {
             'title': 'Ticket: #' + req.params.number,
             'number': req.params.number,
-            'ticket': document
+            'ticket': ticket
         });
     });
 }).get('/console', function(req, res){
@@ -101,20 +61,21 @@ http.listen(3000, function(){
 
 io.on('connection', function(socket){
     console.log('a user connected');
-    
-    socket.on('create-ticket', function(ticket){
-        getUniqueTicketNumber(function(n){
-            ticket.number = n;
-            ticket.created = new Date();
-            ticket.open = true;
-            insert('tickets', ticket, function(err, result){
-                if (err) throw err;
-                var records = result.ops;
-                console.log('inserted ticket: '+records[0]._id);
-                io.emit('ticket-created', {"error": null, "ticket": records[0]});
-            });
+    socket.on('create-ticket', function(ticket){   
+        repo.createTicket(ticket, function(result){
+            console.log('inserted ticket: '+result._id);
+            io.emit('ticket-created', result);
+        });
+    }).on('get-categories', function(){
+        //io.emit('categories', [{id: 1, name: 'IT Support'}, {id: 2, name: 'Deposition'}]);
+        repo.getCategories(function(categories){
+            io.emit('categories', categories);
         });
     });
+});
+
+da.all('tickets', function(result){
+    debug.log(result);
 });
 
 process.stdin.on('data', function(text){
@@ -124,7 +85,7 @@ process.stdin.on('data', function(text){
 		var splitter = text.split(' ');
 		if (splitter.length == 2){
 			var number = splitter[1].replace('\r', '').replace('\n', '');
-			findOne('tickets', {number:parseInt(number)}, function(err, document){
+			da.findOne('tickets', {number:parseInt(number)}, function(document){
                 debug.log(document);
             });
 		}else{
@@ -132,7 +93,7 @@ process.stdin.on('data', function(text){
 		}
 	} else {
         var query = JSON.parse(text);
-        findOne('tickets', query, function(err, document){
+        da.findOne('tickets', query, function(document){
             debug.log(document);
         });
     }
